@@ -1,8 +1,13 @@
+#================================================================================================================================
+# Github link of the code repository:
+# https://github.com/NehaMadhekar09/ENPM661_PlanningForAutonomousRobots/commits?author=NehaMadhekar09
+#================================================================================================================================
 import pygame
 import numpy as np
 import heapq as hq
 from collections import deque
 from pygame import gfxdraw
+import time
 
 pygame.init()
 canvas=pygame.display.set_mode((600,250))
@@ -25,7 +30,6 @@ hex_points_inflated=[]
 line_offset=5
 offset_for_vertex=line_offset/np.cos(np.deg2rad(30))
 inflated_side= side + offset_for_vertex
-# print(inflated_side)
 
 for i in range(6):
     x=centre_hex[0]+side*np.cos(np.deg2rad(60*i + 30))
@@ -41,14 +45,16 @@ pygame.draw.polygon(canvas, (255,0,0), (hex_points[0],hex_points[1],hex_points[2
 
 
 # For Triangular Obstacle
-y_offset=5*np.sqrt(3)
-x_offset=5/np.sin(np.deg2rad(60))
-pygame.draw.polygon(canvas, (255,255,255), ((455,15-y_offset),(455,235+y_offset),(515,125)))
+x_off=10/np.sqrt(3)
+y_off=10+(20/np.sqrt(3))
+
+pygame.draw.polygon(canvas, (255,255,255), ((460-5,25-y_off),(460-5,225+y_off),(510+x_off,125)))
 pygame.draw.polygon(canvas, (80,208,255), ((460,25),(460,225),(510,125)))
-pygame.draw.polygon(canvas, (80,208,255), ((460,25),(460,225),(510,125)),2)
+pygame.draw.polygon(canvas, (255,0,0), ((460,25),(460,225),(510,125)),2)
 
 pygame.display.flip()
-# //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+#================================================================================================================================
+# Functions used for Dijkstras Algorithm
 
 # Checks whether the left move is posiible  
 def IsLeftMovePossible(current_node,closed_queue):
@@ -153,7 +159,6 @@ def BacktrackPath(closed_queue,goal_xy,goal_parent_index):
     return path
 
 # Dijkstras Algorithm
-
 def DijkstrasAlgorithm(start_node_xy, goal_node_xy):
     open_Q = []
     closed_Q=[]
@@ -258,24 +263,64 @@ def DijkstrasAlgorithm(start_node_xy, goal_node_xy):
             print("Failed to find solution")
             return
 
-
+    # Backtrach path
     path=BacktrackPath(closed_Q,goal_node_xy,goal_parent_index)
 
     return path, visited_nodes
 
 
-path,visited_nodes=DijkstrasAlgorithm((0,0),(200,50))
-print("Done")
+#================================================================================================================================
 
-for i in range (len(visited_nodes)):
-    gfxdraw.pixel(canvas, visited_nodes[i][0], visited_nodes[i][1], (0,0,255))
-    pygame.display.flip()
+# Get correct inputs from user
+while True:
+    start_x=int(input("Enter x coordinate of the start node: "))
+    start_y=int(input("Enter y coordinate of the start node: "))
+    if (0<=start_x<600 and 0<=start_y<250):
+        # Check whether the inputs are not in collision space
+        if (canvas.get_at((start_x, start_y))[:3]==(0,0,0)):
+            break
+        print("The start node lie in the obstacle space. Enter the values again")
+    print("The start node is not within the canvas range. Enter the values again")
 
-for i in range (len(path)):
-    pygame.draw.circle(canvas, (255,255,0), path[i], 3)
-    pygame.display.flip()
-    
-print("Done")  
+
+while True:
+    goal_x=int(input("Enter x coordinate of the goal node: "))
+    goal_y=int(input("Enter y coordinate of the goal node: "))
+    if (0<=goal_x<600 and 0<=goal_y<250):
+        # Check whether the inputs are not in collision space
+        if (canvas.get_at((goal_x, goal_y))[:3]==(0,0,0)):
+            break
+        print("The goal node lie in the obstacle space. Enter the values again")
+    print("The goal node is not within the canvas range. Enter the values again")
+
+
+print("Dijkstras in progress...")
+
+# Convert start and goal node to correct coordinate system
+start_node_xy=(start_x,249-start_y)
+goal_node_xy=(goal_x,249-goal_y)
+
+start = time.time()
+
+# Run algorithm
+path,visited_nodes=DijkstrasAlgorithm(start_node_xy,goal_node_xy)
+
+end = time.time()
+print("Done. Total time taken in seconds: ",end - start)
+
+# Display the animation if user says yes
+Visualization = input('Would you like to start visualization? Type "y" if yes, type "n" if no: ').lower()
+if Visualization.startswith('y'):
+    # Show explored nodes
+    for i in range (len(visited_nodes)):
+        gfxdraw.pixel(canvas, visited_nodes[i][0], visited_nodes[i][1], (0,0,255))
+        pygame.display.flip()
+
+    # Show optimal path
+    for i in range (len(path)):
+        pygame.draw.circle(canvas, (255,255,0), path[i], 3)
+        pygame.display.flip()
+
 
 running = True
   
