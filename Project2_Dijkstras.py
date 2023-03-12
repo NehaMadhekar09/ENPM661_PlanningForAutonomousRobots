@@ -8,12 +8,10 @@ canvas=pygame.display.set_mode((600,250))
  
 
 # For Rectangular Obstacles
-# pygame.draw.rect(canvas, (255,255,255), pygame.Rect(95, 0, 60, 105))
 pygame.draw.rect(canvas, (255,255,255), pygame.Rect(100, 0, 50, 100).inflate(10,10))
 pygame.draw.rect(canvas, (80,208,255), pygame.Rect(100, 0, 50, 100))
 pygame.draw.rect(canvas, (255,0,0), pygame.Rect(100, 0, 50, 100),2)
 
-# pygame.draw.rect(canvas, (255,255,255), pygame.Rect(95, 145, 60, 105))
 pygame.draw.rect(canvas, (255,255,255), pygame.Rect(100, 150, 50, 100).inflate(10,10))
 pygame.draw.rect(canvas, (80,208,255), pygame.Rect(100, 150, 50, 100))
 pygame.draw.rect(canvas, (255,0,0), pygame.Rect(100, 150, 50, 100),2)
@@ -56,46 +54,84 @@ pygame.display.flip()
 def IsLeftMovePossible(current_node,closed_queue):
     if not(current_node[3][0]==0):
         new_node_xy=(current_node[3][0]-1,current_node[3][1])
-        if not(new_node_xy in list(zip(*closed_queue))[3]):
-            return[True,new_node_xy]
+        if canvas.get_at((new_node_xy[0], new_node_xy[1]))[:3]==(0,0,0):
+            if not(new_node_xy in list(zip(*closed_queue))[3]):
+                return [True,new_node_xy] 
     return[False]
 
 # Checks whether the right move is posiible  
 def IsRightMovePossible(current_node,closed_queue):
     if not(current_node[3][0]==600):
         new_node_xy=(current_node[3][0]+1,current_node[3][1])
-        if not(new_node_xy in list(zip(*closed_queue))[3]):
-            return[True,new_node_xy]
+        if canvas.get_at((new_node_xy[0], new_node_xy[1]))[:3]==(0,0,0):
+            if not(new_node_xy in list(zip(*closed_queue))[3]):
+                return[True,new_node_xy]
     return[False]
 
 # Checks whether the up move is posiible  
 def IsUpMovePossible(current_node,closed_queue):
     if not(current_node[3][1]==0):
         new_node_xy=(current_node[3][0],current_node[3][1]-1)
-        if not(new_node_xy in list(zip(*closed_queue))[3]):
-            return[True,new_node_xy]
+        if canvas.get_at((new_node_xy[0], new_node_xy[1]))[:3]==(0,0,0):
+            if not(new_node_xy in list(zip(*closed_queue))[3]):
+                return[True,new_node_xy]
     return[False]
 
 # Checks whether the down move is posiible  
 def IsDownMovePossible(current_node,closed_queue):
     if not(current_node[3][1]==250):
         new_node_xy=(current_node[3][0],current_node[3][1]+1)
-        if not(new_node_xy in list(zip(*closed_queue))[3]):
-            return[True,new_node_xy]
+        if canvas.get_at((new_node_xy[0], new_node_xy[1]))[:3]==(0,0,0):
+            if not(new_node_xy in list(zip(*closed_queue))[3]):
+                return[True,new_node_xy]
     return[False]
     
+# Checks whether the up-right move is posiible  
+def IsUpRightMovePossible(current_node,closed_queue):
+    if not(current_node[3][0]==600 or current_node[3][1]==0):
+        new_node_xy=(current_node[3][0]+1,current_node[3][1]-1)
+        if canvas.get_at((new_node_xy[0], new_node_xy[1]))[:3]==(0,0,0):
+            if not(new_node_xy in list(zip(*closed_queue))[3]):
+                return[True,new_node_xy]
+    return[False]
+
+# Checks whether the up-left move is posiible
+def IsUpLeftMovePossible(current_node,closed_queue):
+    if not(current_node[3][0]==0 or current_node[3][1]==0):
+        new_node_xy=(current_node[3][0]-1,current_node[3][1]-1)
+        if canvas.get_at((new_node_xy[0], new_node_xy[1]))[:3]==(0,0,0):
+            if not(new_node_xy in list(zip(*closed_queue))[3]):
+                return[True,new_node_xy]
+    return[False]
+
+# Checks whether the down-left move is posiible
+def IsDownLeftMovePossible(current_node,closed_queue):
+    if not(current_node[3][0]==0 or current_node[3][1]==250):
+        new_node_xy=(current_node[3][0]-1,current_node[3][1]+1)
+        if canvas.get_at((new_node_xy[0], new_node_xy[1]))[:3]==(0,0,0):
+            if not(new_node_xy in list(zip(*closed_queue))[3]):
+                return[True,new_node_xy]
+    return[False]
+
+# Checks whether the down-right move is posiible
+def IsDownRightMovePossible(current_node,closed_queue):
+    if not(current_node[3][0]==600 or current_node[3][1]==250):
+        new_node_xy=(current_node[3][0]+1,current_node[3][1]+1)
+        if canvas.get_at((new_node_xy[0], new_node_xy[1]))[:3]==(0,0,0):
+            if not(new_node_xy in list(zip(*closed_queue))[3]):
+                return[True,new_node_xy]
+    return[False]
 
 def UpdateOpenList(current_node,new_node_xy,step_cost,open_queue,index):
     cost_to_come=current_node[0] + step_cost
     is_present=False
     for i in range(len(open_queue)):
-                if open_queue[i][3]==new_node_xy:
-                    is_present=True
-                    if(cost_to_come < open_queue[i][0]):
-                        open_queue[i][0]=cost_to_come
-                        open_queue[i][2]=current_node[1]
-                        open_queue[i][3]=new_node_xy
-                    new_node=open_queue[i]
+        if open_queue[i][3]==new_node_xy:
+            is_present=True
+            if(cost_to_come < open_queue[i][0]):
+                id=open_queue[i][1]
+                open_queue[i]=(cost_to_come, id, current_node[1],new_node_xy)
+            new_node=open_queue[i]    
     if not is_present:
         new_node=(cost_to_come,index,current_node[1],new_node_xy)
         hq.heappush(open_queue,new_node)
@@ -145,10 +181,46 @@ def DijkstrasAlgorithm(start_node_xy, goal_node_xy):
                 goal_parent_index=new_node[2]
                 break
 
+        up_right_move=IsUpRightMovePossible(current_node,closed_Q)
+        if(up_right_move[0]):
+            new_node_xy=up_right_move[1]
+            new_node=UpdateOpenList(current_node,new_node_xy,1.4,open_Q,index)
+            index+=1
+            if(new_node_xy==goal_node_xy):
+                goal_parent_index=new_node[2]
+                break
+
+        up_left_move=IsUpLeftMovePossible(current_node,closed_Q)
+        if(up_left_move[0]):
+            new_node_xy=up_left_move[1]
+            new_node=UpdateOpenList(current_node,new_node_xy,1.4,open_Q,index)
+            index+=1
+            if(new_node_xy==goal_node_xy):
+                goal_parent_index=new_node[2]
+                break
+        
         up_move=IsUpMovePossible(current_node,closed_Q)
         if(up_move[0]):
             new_node_xy=up_move[1]
             new_node=UpdateOpenList(current_node,new_node_xy,1,open_Q,index)
+            index+=1
+            if(new_node_xy==goal_node_xy):
+                goal_parent_index=new_node[2]
+                break
+
+        down_left_move=IsDownLeftMovePossible(current_node,closed_Q)
+        if(down_left_move[0]):
+            new_node_xy=down_left_move[1]
+            new_node=UpdateOpenList(current_node,new_node_xy,1.4,open_Q,index)
+            index+=1
+            if(new_node_xy==goal_node_xy):
+                goal_parent_index=new_node[2]
+                break
+
+        down_right_move=IsDownRightMovePossible(current_node,closed_Q)
+        if(down_right_move[0]):
+            new_node_xy=down_right_move[1]
+            new_node=UpdateOpenList(current_node,new_node_xy,1.4,open_Q,index)
             index+=1
             if(new_node_xy==goal_node_xy):
                 goal_parent_index=new_node[2]
@@ -182,21 +254,14 @@ def DijkstrasAlgorithm(start_node_xy, goal_node_xy):
     return path
 
 
-
-
-
-path=DijkstrasAlgorithm((1,1),(10,10))
+path=DijkstrasAlgorithm((90,90),(160,90))
 print(path)
 
 
 running = True
   
-# game loop
 while running:
-    
-# for loop through the event queue  
     for event in pygame.event.get():
-      
         # Check for QUIT event      
         if event.type == pygame.QUIT:
             running = False
