@@ -2,11 +2,11 @@ import pygame
 import numpy as np
 import heapq as hq
 from collections import deque
+from pygame import gfxdraw
 
 pygame.init()
 canvas=pygame.display.set_mode((600,250))
  
-
 # For Rectangular Obstacles
 pygame.draw.rect(canvas, (255,255,255), pygame.Rect(100, 0, 50, 100).inflate(10,10))
 pygame.draw.rect(canvas, (80,208,255), pygame.Rect(100, 0, 50, 100))
@@ -61,7 +61,7 @@ def IsLeftMovePossible(current_node,closed_queue):
 
 # Checks whether the right move is posiible  
 def IsRightMovePossible(current_node,closed_queue):
-    if not(current_node[3][0]==600):
+    if not(current_node[3][0]==599):
         new_node_xy=(current_node[3][0]+1,current_node[3][1])
         if canvas.get_at((new_node_xy[0], new_node_xy[1]))[:3]==(0,0,0):
             if not(new_node_xy in list(zip(*closed_queue))[3]):
@@ -79,7 +79,7 @@ def IsUpMovePossible(current_node,closed_queue):
 
 # Checks whether the down move is posiible  
 def IsDownMovePossible(current_node,closed_queue):
-    if not(current_node[3][1]==250):
+    if not(current_node[3][1]==249):
         new_node_xy=(current_node[3][0],current_node[3][1]+1)
         if canvas.get_at((new_node_xy[0], new_node_xy[1]))[:3]==(0,0,0):
             if not(new_node_xy in list(zip(*closed_queue))[3]):
@@ -88,7 +88,7 @@ def IsDownMovePossible(current_node,closed_queue):
     
 # Checks whether the up-right move is posiible  
 def IsUpRightMovePossible(current_node,closed_queue):
-    if not(current_node[3][0]==600 or current_node[3][1]==0):
+    if not(current_node[3][0]==599 or current_node[3][1]==0):
         new_node_xy=(current_node[3][0]+1,current_node[3][1]-1)
         if canvas.get_at((new_node_xy[0], new_node_xy[1]))[:3]==(0,0,0):
             if not(new_node_xy in list(zip(*closed_queue))[3]):
@@ -106,7 +106,7 @@ def IsUpLeftMovePossible(current_node,closed_queue):
 
 # Checks whether the down-left move is posiible
 def IsDownLeftMovePossible(current_node,closed_queue):
-    if not(current_node[3][0]==0 or current_node[3][1]==250):
+    if not(current_node[3][0]==0 or current_node[3][1]==249):
         new_node_xy=(current_node[3][0]-1,current_node[3][1]+1)
         if canvas.get_at((new_node_xy[0], new_node_xy[1]))[:3]==(0,0,0):
             if not(new_node_xy in list(zip(*closed_queue))[3]):
@@ -115,7 +115,7 @@ def IsDownLeftMovePossible(current_node,closed_queue):
 
 # Checks whether the down-right move is posiible
 def IsDownRightMovePossible(current_node,closed_queue):
-    if not(current_node[3][0]==600 or current_node[3][1]==250):
+    if not(current_node[3][0]==599 or current_node[3][1]==249):
         new_node_xy=(current_node[3][0]+1,current_node[3][1]+1)
         if canvas.get_at((new_node_xy[0], new_node_xy[1]))[:3]==(0,0,0):
             if not(new_node_xy in list(zip(*closed_queue))[3]):
@@ -157,10 +157,12 @@ def BacktrackPath(closed_queue,goal_xy,goal_parent_index):
 def DijkstrasAlgorithm(start_node_xy, goal_node_xy):
     open_Q = []
     closed_Q=[]
+    visited_nodes=[]
     
     # creating tuple with cost to come, index, parent node index and coordinate values (x,y)
     node=(0, 0, 0, start_node_xy)  
     hq.heappush(open_Q, node)
+    visited_nodes.append(start_node_xy)
     hq.heapify(open_Q)
     hq.heapify(closed_Q)
 
@@ -176,6 +178,7 @@ def DijkstrasAlgorithm(start_node_xy, goal_node_xy):
         if(right_move[0]):
             new_node_xy=right_move[1]
             new_node=UpdateOpenList(current_node,new_node_xy,1,open_Q,index)
+            visited_nodes.append(new_node_xy)
             index+=1
             if(new_node_xy==goal_node_xy):
                 goal_parent_index=new_node[2]
@@ -185,6 +188,7 @@ def DijkstrasAlgorithm(start_node_xy, goal_node_xy):
         if(up_right_move[0]):
             new_node_xy=up_right_move[1]
             new_node=UpdateOpenList(current_node,new_node_xy,1.4,open_Q,index)
+            visited_nodes.append(new_node_xy)
             index+=1
             if(new_node_xy==goal_node_xy):
                 goal_parent_index=new_node[2]
@@ -194,6 +198,7 @@ def DijkstrasAlgorithm(start_node_xy, goal_node_xy):
         if(up_left_move[0]):
             new_node_xy=up_left_move[1]
             new_node=UpdateOpenList(current_node,new_node_xy,1.4,open_Q,index)
+            visited_nodes.append(new_node_xy)
             index+=1
             if(new_node_xy==goal_node_xy):
                 goal_parent_index=new_node[2]
@@ -203,6 +208,7 @@ def DijkstrasAlgorithm(start_node_xy, goal_node_xy):
         if(up_move[0]):
             new_node_xy=up_move[1]
             new_node=UpdateOpenList(current_node,new_node_xy,1,open_Q,index)
+            visited_nodes.append(new_node_xy)
             index+=1
             if(new_node_xy==goal_node_xy):
                 goal_parent_index=new_node[2]
@@ -212,6 +218,7 @@ def DijkstrasAlgorithm(start_node_xy, goal_node_xy):
         if(down_left_move[0]):
             new_node_xy=down_left_move[1]
             new_node=UpdateOpenList(current_node,new_node_xy,1.4,open_Q,index)
+            visited_nodes.append(new_node_xy)
             index+=1
             if(new_node_xy==goal_node_xy):
                 goal_parent_index=new_node[2]
@@ -221,6 +228,7 @@ def DijkstrasAlgorithm(start_node_xy, goal_node_xy):
         if(down_right_move[0]):
             new_node_xy=down_right_move[1]
             new_node=UpdateOpenList(current_node,new_node_xy,1.4,open_Q,index)
+            visited_nodes.append(new_node_xy)
             index+=1
             if(new_node_xy==goal_node_xy):
                 goal_parent_index=new_node[2]
@@ -230,6 +238,7 @@ def DijkstrasAlgorithm(start_node_xy, goal_node_xy):
         if(left_move[0]):
             new_node_xy=left_move[1]
             new_node=UpdateOpenList(current_node,new_node_xy,1,open_Q,index)
+            visited_nodes.append(new_node_xy)
             index+=1
             if(new_node_xy==goal_node_xy):
                 goal_parent_index=new_node[2]
@@ -239,6 +248,7 @@ def DijkstrasAlgorithm(start_node_xy, goal_node_xy):
         if(down_move[0]):
             new_node_xy=down_move[1]
             new_node=UpdateOpenList(current_node,new_node_xy,1,open_Q,index)
+            visited_nodes.append(new_node_xy)
             index+=1
             if(new_node_xy==goal_node_xy):
                 goal_parent_index=new_node[2]
@@ -251,12 +261,21 @@ def DijkstrasAlgorithm(start_node_xy, goal_node_xy):
 
     path=BacktrackPath(closed_Q,goal_node_xy,goal_parent_index)
 
-    return path
+    return path, visited_nodes
 
 
-path=DijkstrasAlgorithm((90,90),(160,90))
-print(path)
+path,visited_nodes=DijkstrasAlgorithm((0,0),(200,50))
+print("Done")
 
+for i in range (len(visited_nodes)):
+    gfxdraw.pixel(canvas, visited_nodes[i][0], visited_nodes[i][1], (0,0,255))
+    pygame.display.flip()
+
+for i in range (len(path)):
+    pygame.draw.circle(canvas, (255,255,0), path[i], 3)
+    pygame.display.flip()
+    
+print("Done")  
 
 running = True
   
