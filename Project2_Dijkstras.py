@@ -58,90 +58,86 @@ pygame.display.flip()
 
 # Checks whether the left move is posiible  
 def IsLeftMovePossible(current_node,closed_queue):
-    if not(current_node[3][0]==0):
-        new_node_xy=(current_node[3][0]-1,current_node[3][1])
+    if not(current_node[0][0]==0):
+        new_node_xy=(current_node[0][0]-1,current_node[0][1])
         if canvas.get_at((new_node_xy[0], new_node_xy[1]))[:3]==(0,0,0):
-            if not(new_node_xy in list(zip(*closed_queue))[3]):
+            if not new_node_xy in closed_queue:
                 return [True,new_node_xy] 
     return[False]
 
 # Checks whether the right move is posiible  
 def IsRightMovePossible(current_node,closed_queue):
-    if not(current_node[3][0]==599):
-        new_node_xy=(current_node[3][0]+1,current_node[3][1])
+    if not(current_node[0][0]==599):
+        new_node_xy=(current_node[0][0]+1,current_node[0][1])
         if canvas.get_at((new_node_xy[0], new_node_xy[1]))[:3]==(0,0,0):
-            if not(new_node_xy in list(zip(*closed_queue))[3]):
+            if not new_node_xy in closed_queue:
                 return[True,new_node_xy]
     return[False]
 
 # Checks whether the up move is posiible  
 def IsUpMovePossible(current_node,closed_queue):
-    if not(current_node[3][1]==0):
-        new_node_xy=(current_node[3][0],current_node[3][1]-1)
+    if not(current_node[0][1]==0):
+        new_node_xy=(current_node[0][0],current_node[0][1]-1)
         if canvas.get_at((new_node_xy[0], new_node_xy[1]))[:3]==(0,0,0):
-            if not(new_node_xy in list(zip(*closed_queue))[3]):
+            if not new_node_xy in closed_queue:
                 return[True,new_node_xy]
     return[False]
 
 # Checks whether the down move is posiible  
 def IsDownMovePossible(current_node,closed_queue):
-    if not(current_node[3][1]==249):
-        new_node_xy=(current_node[3][0],current_node[3][1]+1)
+    if not(current_node[0][1]==249):
+        new_node_xy=(current_node[0][0],current_node[0][1]+1)
         if canvas.get_at((new_node_xy[0], new_node_xy[1]))[:3]==(0,0,0):
-            if not(new_node_xy in list(zip(*closed_queue))[3]):
+            if not new_node_xy in closed_queue:
                 return[True,new_node_xy]
     return[False]
     
 # Checks whether the up-right move is posiible  
 def IsUpRightMovePossible(current_node,closed_queue):
-    if not(current_node[3][0]==599 or current_node[3][1]==0):
-        new_node_xy=(current_node[3][0]+1,current_node[3][1]-1)
+    if not(current_node[0][0]==599 or current_node[0][1]==0):
+        new_node_xy=(current_node[0][0]+1,current_node[0][1]-1)
         if canvas.get_at((new_node_xy[0], new_node_xy[1]))[:3]==(0,0,0):
-            if not(new_node_xy in list(zip(*closed_queue))[3]):
+            if not new_node_xy in closed_queue:
                 return[True,new_node_xy]
     return[False]
 
 # Checks whether the up-left move is posiible
 def IsUpLeftMovePossible(current_node,closed_queue):
-    if not(current_node[3][0]==0 or current_node[3][1]==0):
-        new_node_xy=(current_node[3][0]-1,current_node[3][1]-1)
+    if not(current_node[0][0]==0 or current_node[0][1]==0):
+        new_node_xy=(current_node[0][0]-1,current_node[0][1]-1)
         if canvas.get_at((new_node_xy[0], new_node_xy[1]))[:3]==(0,0,0):
-            if not(new_node_xy in list(zip(*closed_queue))[3]):
+            if not new_node_xy in closed_queue:
                 return[True,new_node_xy]
     return[False]
 
 # Checks whether the down-left move is posiible
 def IsDownLeftMovePossible(current_node,closed_queue):
-    if not(current_node[3][0]==0 or current_node[3][1]==249):
-        new_node_xy=(current_node[3][0]-1,current_node[3][1]+1)
+    if not(current_node[0][0]==0 or current_node[0][1]==249):
+        new_node_xy=(current_node[0][0]-1,current_node[0][1]+1)
         if canvas.get_at((new_node_xy[0], new_node_xy[1]))[:3]==(0,0,0):
-            if not(new_node_xy in list(zip(*closed_queue))[3]):
+            if not new_node_xy in closed_queue:
                 return[True,new_node_xy]
     return[False]
 
 # Checks whether the down-right move is posiible
 def IsDownRightMovePossible(current_node,closed_queue):
-    if not(current_node[3][0]==599 or current_node[3][1]==249):
-        new_node_xy=(current_node[3][0]+1,current_node[3][1]+1)
+    if not(current_node[0][0]==599 or current_node[0][1]==249):
+        new_node_xy=(current_node[0][0]+1,current_node[0][1]+1)
         if canvas.get_at((new_node_xy[0], new_node_xy[1]))[:3]==(0,0,0):
-            if not(new_node_xy in list(zip(*closed_queue))[3]):
+            if not new_node_xy in closed_queue:
                 return[True,new_node_xy]
     return[False]
 
 def UpdateOpenList(current_node,new_node_xy,step_cost,open_queue,index):
-    cost_to_come=current_node[0] + step_cost
-    is_present=False
-    for i in range(len(open_queue)):
-        if open_queue[i][3]==new_node_xy:
-            is_present=True
-            if(cost_to_come < open_queue[i][0]):
-                id=open_queue[i][1]
-                open_queue[i]=(cost_to_come, id, current_node[1],new_node_xy)
-            new_node=open_queue[i]    
-    if not is_present:
-        new_node=(cost_to_come,index,current_node[1],new_node_xy)
-        hq.heappush(open_queue,new_node)
-    hq.heapify(open_queue)
+    cost_to_come=current_node[1][0] + step_cost
+    if new_node_xy in open_queue:
+        if(cost_to_come < open_queue[new_node_xy][0]):
+            id=open_queue[new_node_xy][1]
+            open_queue[new_node_xy]=(cost_to_come, id, current_node[1][1],new_node_xy)
+    else:
+        open_queue[new_node_xy]=(cost_to_come,index,current_node[1][1])
+        new_node=(cost_to_come,index,current_node[1][1],new_node_xy)
+    new_node=open_queue[new_node_xy]
     return new_node
 
 # This function generates path by backtracking.
@@ -151,34 +147,30 @@ def BacktrackPath(closed_queue,goal_xy,goal_parent_index):
     parent_index=goal_parent_index
     index=1
     while(index!=0):
-        for i in range(len(closed_queue)):
-            if(closed_queue[i][1]==parent_index):
-                path.appendleft(closed_queue[i][3])
-                parent_index=closed_queue[i][2]
-                index=closed_queue[i][1]
+        for key,value in closed_queue.items():
+            if parent_index==value[1]:
+                path.appendleft(key)
+                parent_index=value[2]
+                index=value[1]
     return path
 
 # Dijkstras Algorithm
 def DijkstrasAlgorithm(start_node_xy, goal_node_xy):
-    open_Q = []
-    closed_Q=[]
+    open_Q = {}
+    closed_Q={}
     visited_nodes=[]
     
-    # creating tuple with cost to come, index, parent node index and coordinate values (x,y)
-    node=(0, 0, 0, start_node_xy)  
-    hq.heappush(open_Q, node)
+    # creating tuple with cost to come, index, parent node index and adding to the dictionary with key value as node coordinates
+    open_Q[start_node_xy]=(0,0,0)
     visited_nodes.append(start_node_xy)
-    hq.heapify(open_Q)
-    hq.heapify(closed_Q)
 
     index=1
     # Run for maximum 1 million iterations
     while index < 1000000:
-        current_node=hq.heappop(open_Q)
-        hq.heappush(closed_Q,current_node)
-        hq.heapify(closed_Q)
-        hq.heapify(open_Q)
-
+        open_Q=dict(sorted(open_Q.items(),key=lambda x:x[1][0],reverse = True))
+        current_node=open_Q.popitem()
+        closed_Q[current_node[0]]=current_node[1]
+        
         right_move=IsRightMovePossible(current_node,closed_Q)
         if(right_move[0]):
             new_node_xy=right_move[1]
@@ -280,7 +272,8 @@ while True:
         if (canvas.get_at((start_x, start_y))[:3]==(0,0,0)):
             break
         print("The start node lie in the obstacle space. Enter the values again")
-    print("The start node is not within the canvas range. Enter the values again")
+    else:
+        print("The start node is not within the canvas range. Enter the values again")
 
 
 while True:
@@ -291,9 +284,10 @@ while True:
         if (canvas.get_at((goal_x, goal_y))[:3]==(0,0,0)):
             break
         print("The goal node lie in the obstacle space. Enter the values again")
-    print("The goal node is not within the canvas range. Enter the values again")
+    else:
+        print("The goal node is not within the canvas range. Enter the values again")
 
-
+    
 print("Dijkstras in progress...")
 
 # Convert start and goal node to correct coordinate system
