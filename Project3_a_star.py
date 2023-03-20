@@ -318,7 +318,7 @@ while True:
     start_x=int(input("Enter x coordinate of the start node: "))
     start_y=int(input("Enter y coordinate of the start node: "))
     start_theta=int(input("Enter the orientation of the robot in degrees at the start node(It should be multiple of 30): "))
-    if (0<=start_x<600 and 0<=start_y<250 and start_theta%30 != 0):
+    if (0<=start_x<600 and 0<=start_y<250 and abs(start_theta%30) == 0):
         # Check whether the inputs are not in collision space
         is_node_in_obstacle_space=IsNodeInObstacleSpace((start_x,249-start_y),wall_clearance,rectangle_1,rectangle_2,hexagon,triangle)
         if not is_node_in_obstacle_space:
@@ -331,7 +331,7 @@ while True:
     goal_x=int(input("Enter x coordinate of the goal node: "))
     goal_y=int(input("Enter y coordinate of the goal node: "))
     goal_theta=int(input("Enter the orientation of the robot in degrees at the goal node(It should be multiple of 30): "))
-    if (0<=goal_x<600 and 0<=goal_y<250 and goal_theta%30 != 0):
+    if (0<=goal_x<600 and 0<=goal_y<250 and abs(goal_theta%30) == 0):
         # Check whether the inputs are not in collision space
         is_node_in_obstacle_space=IsNodeInObstacleSpace((goal_x,249-goal_y),wall_clearance,rectangle_1,rectangle_2,hexagon,triangle)
         if not is_node_in_obstacle_space:
