@@ -1,6 +1,7 @@
 #================================================================================================================================
 # Github link of the code repository:
-# https://github.com/NehaMadhekar09/ENPM661_PlanningForAutonomousRobots/commits?author=NehaMadhekar09
+# https://github.com/NehaMadhekar09/ENPM661_PlanningForAutonomousRobots
+# Refer to Project3_a_star.py for Project3 Phase1
 #================================================================================================================================
 import pygame
 import numpy as np
@@ -8,6 +9,8 @@ from collections import deque
 from shapely.geometry import LineString
 import time
 
+#================================================================================================================================
+# Functions for creating obstacle space 
 
 def FindIntersectionOfTwoLines(line1,line2):
     if(line1[1][0] - line1[0][0]==0):
@@ -29,7 +32,6 @@ def FindIntersectionOfTwoLines(line1,line2):
         intersection_y = m1 * intersection_x + c1
 
     return (intersection_x,intersection_y)
-
 
 def CreateObstacles(canvas,clerarance,robot_radius):
     distance= clerarance+robot_radius
@@ -95,7 +97,7 @@ def CreateObstacles(canvas,clerarance,robot_radius):
 #================================================================================================================================
 # Functions used for A* Algorithm
 
-# Using half planes
+# Using half planes to find whether a point is in a given obstacle
 def IsPointOnOneSideOfLineSet(point,pointset):
     is_on_right_side=[]
     for i in range(len(pointset)-1):
@@ -118,6 +120,7 @@ def IsPointOnOneSideOfLineSet(point,pointset):
     isAllSame = all(ele == is_on_right_side[0] for ele in is_on_right_side)
     return isAllSame
 
+# Determines whether the given node is in any of the given obstacle shapes
 def IsNodeInObstacleSpace(point,wall_clearance,rectangle_1,rectangle_2,hexagon,triangle):
     is_in_obstacle_space=False
     if not IsPointOnOneSideOfLineSet(point,wall_clearance):
@@ -132,6 +135,7 @@ def IsNodeInObstacleSpace(point,wall_clearance,rectangle_1,rectangle_2,hexagon,t
         is_in_obstacle_space= True
     return is_in_obstacle_space
 
+# Determines whether a move at given angle is possible 
 def IsAngleActionPossible(current_node,closed_queue,closed_Q_matrix,L,angle,wall_clearance,rectangle_1,rectangle_2,hexagon,triangle):
     new_angle=current_node[1][5][2] + angle
     if new_angle < 0:
@@ -148,10 +152,11 @@ def IsAngleActionPossible(current_node,closed_queue,closed_Q_matrix,L,angle,wall
                 return [True,new_node_xythetaD,new_node_xytheta] 
     return[False]
 
+# Computes Euclidean distance between given two points
 def ComputeDistance(node_xytheta,goal_node_xytheta):
     return np.sqrt((goal_node_xytheta[0]-node_xytheta[0])*(goal_node_xytheta[0]-node_xytheta[0])+(goal_node_xytheta[1]-node_xytheta[1])*(goal_node_xytheta[1]-node_xytheta[1]))
     
-
+# Updates open list 
 def UpdateOpenList(current_node,new_node_xythetaD,new_node_xytheta,action_cost,open_queue,open_matrix,index,goal_node_xytheta):
     cost_to_come=current_node[1][1] + action_cost
     if open_matrix[int(new_node_xythetaD[1]/0.5)][int(new_node_xythetaD[0]/0.5)][int(new_node_xythetaD[2]/30)]==1:
@@ -181,6 +186,7 @@ def BacktrackPath(closed_queue,goal_xy_theta,goal_parent_index):
                 index=value[3]
     return path
 
+# Discretize node coordinates or find the node region
 def DiscretizeNodeCoordinates(actual_coordinates,thresholds=(0.5,0.5,30)):
     discretized_coordinates=[]
     for i in range(len(actual_coordinates)):
@@ -192,7 +198,7 @@ def DiscretizeNodeCoordinates(actual_coordinates,thresholds=(0.5,0.5,30)):
             discretized_coordinates.append((answer+1)*thresholds[i])
     return (discretized_coordinates[0],discretized_coordinates[1],discretized_coordinates[2])
 
-
+# Checks whether a goal node matches with the current node considering tolerance
 def IsGoalReached(node_xytheta, goal_node_xytheta,goal_threshold):
     goal_reached=False
     distance=ComputeDistance(node_xytheta,goal_node_xytheta)
@@ -208,7 +214,6 @@ def A_Star_Algorithm(start_node_xytheta, goal_node_xytheta,L,wall_clearance,rect
     closed_Q={}
     closed_Q_matrix=np.zeros(shape=(500,1200,12))
     
-    
     # creating tuple with total cost,cost to come,cost to go,node index, parent node index and tuple with actual position(x,y,theta)
     # Adding it to the dictionary with key value as descritized node coordinates(x_d,y_d,theta_d)
     start_node_xythetaD=DiscretizeNodeCoordinates(start_node_xytheta)
@@ -218,11 +223,11 @@ def A_Star_Algorithm(start_node_xytheta, goal_node_xytheta,L,wall_clearance,rect
 
     goal_threshold=1.5
     index=1
-    # Run for maximum 10000 iterations
+    # Run for maximum 100000 iterations
     isConverged=True
     while True:
-        if index > 10000:
-            print("Failed to reach the goal.Kindly check whether the goal is in reachable area. Max Iterations Reached.")
+        if index > 100000:
+            print("Failed to reach the goal.Check whether the goal is in reachable area. Max Iterations Reached.")
             isConverged=False
             break
         open_Q=dict(sorted(open_Q.items(),key=lambda x:x[1][0],reverse = True))
@@ -230,6 +235,7 @@ def A_Star_Algorithm(start_node_xytheta, goal_node_xytheta,L,wall_clearance,rect
         closed_Q[current_node[0]]=current_node[1]
         closed_Q_matrix[int(current_node[0][1]/0.5)][int(current_node[0][0]/0.5)][int(current_node[0][2]/30)]=1
         
+        # Check if 0 degrees move possible
         Action_0=IsAngleActionPossible(current_node,closed_Q,closed_Q_matrix,L,0,wall_clearance,rectangle_1,rectangle_2,hexagon,triangle)
         if(Action_0[0]):
             new_node_xythetaD=Action_0[1]
@@ -242,6 +248,7 @@ def A_Star_Algorithm(start_node_xytheta, goal_node_xytheta,L,wall_clearance,rect
                 goal_parent_index=current_node[1][3]
                 break
 
+        # Check if 30 degrees move possible
         Action_30=IsAngleActionPossible(current_node,closed_Q,closed_Q_matrix,L,30,wall_clearance,rectangle_1,rectangle_2,hexagon,triangle)
         if(Action_30[0]):
             new_node_xythetaD=Action_30[1]
@@ -253,7 +260,8 @@ def A_Star_Algorithm(start_node_xytheta, goal_node_xytheta,L,wall_clearance,rect
             if IsGoalReached(new_node_xytheta,goal_node_xytheta,goal_threshold):
                 goal_parent_index=current_node[1][3]
                 break
-
+        
+        # Check if -30 degrees move possible
         Action_Neg30=IsAngleActionPossible(current_node,closed_Q,closed_Q_matrix,L,-30,wall_clearance,rectangle_1,rectangle_2,hexagon,triangle)
         if(Action_Neg30[0]):
             new_node_xythetaD=Action_Neg30[1]
@@ -265,7 +273,8 @@ def A_Star_Algorithm(start_node_xytheta, goal_node_xytheta,L,wall_clearance,rect
             if IsGoalReached(new_node_xytheta,goal_node_xytheta,goal_threshold):
                 goal_parent_index=current_node[1][3]
                 break
-
+        
+        # Check if 60 degrees move possible
         Action_60=IsAngleActionPossible(current_node,closed_Q,closed_Q_matrix,L,60,wall_clearance,rectangle_1,rectangle_2,hexagon,triangle)
         if(Action_60[0]):
             new_node_xythetaD=Action_60[1]
@@ -277,7 +286,8 @@ def A_Star_Algorithm(start_node_xytheta, goal_node_xytheta,L,wall_clearance,rect
             if IsGoalReached(new_node_xytheta,goal_node_xytheta,goal_threshold):
                 goal_parent_index=current_node[1][3]
                 break
-
+        
+        # Check if -60 degrees move possible
         Action_Neg60=IsAngleActionPossible(current_node,closed_Q,closed_Q_matrix,L,-60,wall_clearance,rectangle_1,rectangle_2,hexagon,triangle)
         if(Action_Neg60[0]):
             new_node_xythetaD=Action_Neg60[1]
@@ -304,7 +314,8 @@ def A_Star_Algorithm(start_node_xytheta, goal_node_xytheta,L,wall_clearance,rect
 
 
 #================================================================================================================================
-# 
+# Function Calls
+
 clearance=int(input("Enter the clearance value: "))
 robot_radius=int(input("Enter the robot radius: "))
 
@@ -351,10 +362,21 @@ while True:
 print("A* in progress...")
 
 # Convert start and goal node to correct coordinate system
+if start_theta < 0:
+    start_theta=360+start_theta
+if start_theta >= 360:
+    start_theta=start_theta-360
+
+if goal_theta < 0:
+    goal_theta=360+goal_theta
+if goal_theta >= 360:
+    goal_theta=goal_theta-360
+
 start_node_xytheta=(start_x,249-start_y,start_theta)
 goal_node_xytheta=(goal_x,249-goal_y,goal_theta)
 
 start_time = time.time()
+
 result=A_Star_Algorithm(start_node_xytheta,goal_node_xytheta,step_size,wall_clearance,rectangle_1,rectangle_2,hexagon,triangle)
 
 end_time = time.time()
@@ -363,6 +385,7 @@ print("Total time taken in seconds: ",end_time - start_time)
 if result[0]:
     path=result[1]
     visited_nodes=result[2]
+    # Display explored path
     for i in range(1,len(visited_nodes)):
         parent_index=visited_nodes[i][0]
         pygame.draw.line(canvas, (0, 0, 255),
@@ -386,8 +409,9 @@ if result[0]:
                 [x2, y2], 2)
     pygame.display.flip()
 
-pygame.draw.circle(canvas, (255,0,0), (start_node_xytheta[0],start_node_xytheta[1]),5,3)
-pygame.draw.circle(canvas, (255,0,0), (goal_node_xytheta[0],goal_node_xytheta[1]),5,3)
+# Highlight start and end point
+pygame.draw.circle(canvas, (255,0,0), (start_node_xytheta[0],start_node_xytheta[1]),3,1)
+pygame.draw.circle(canvas, (255,0,0), (goal_node_xytheta[0],goal_node_xytheta[1]),3,1)
 pygame.display.flip()
 
 
