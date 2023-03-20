@@ -201,7 +201,7 @@ def IsGoalReached(node_xytheta, goal_node_xytheta,goal_threshold):
     return goal_reached
 
 # A* Algorithm
-def A_Star_Algorithm(start_node_xytheta, goal_node_xytheta, wall_clearance,rectangle_1,rectangle_2,hexagon,triangle):
+def A_Star_Algorithm(start_node_xytheta, goal_node_xytheta,L,wall_clearance,rectangle_1,rectangle_2,hexagon,triangle):
     visited_nodes=[]
     open_Q = {}
     open_Q_matrix=np.zeros(shape=(500,1200,12))
@@ -216,7 +216,6 @@ def A_Star_Algorithm(start_node_xytheta, goal_node_xytheta, wall_clearance,recta
     open_Q_matrix[int(start_node_xythetaD[1]/0.5)][int(start_node_xythetaD[0]/0.5)][int(start_node_xythetaD[2]/30)]=1
     visited_nodes.append((0,start_node_xytheta))
 
-    L=10
     goal_threshold=1.5
     index=1
     # Run for maximum 10000 iterations
@@ -304,19 +303,59 @@ def A_Star_Algorithm(start_node_xytheta, goal_node_xytheta, wall_clearance,recta
     return [isConverged]
 
 
+#================================================================================================================================
+# 
+clearance=int(input("Enter the clearance value: "))
+robot_radius=int(input("Enter the robot radius: "))
+
 pygame.init()
 canvas=pygame.display.set_mode((600,250))
 
-wall_clearance,rectangle_1,rectangle_2,hexagon,triangle=CreateObstacles(canvas,5,5)
+wall_clearance,rectangle_1,rectangle_2,hexagon,triangle=CreateObstacles(canvas,clearance,robot_radius)
+
+# Get correct inputs from user
+while True:
+    start_x=int(input("Enter x coordinate of the start node: "))
+    start_y=int(input("Enter y coordinate of the start node: "))
+    start_theta=int(input("Enter the orientation of the robot in degrees at the start node(It should be multiple of 30): "))
+    if (0<=start_x<600 and 0<=start_y<250 and start_theta%30 != 0):
+        # Check whether the inputs are not in collision space
+        is_node_in_obstacle_space=IsNodeInObstacleSpace((start_x,249-start_y),wall_clearance,rectangle_1,rectangle_2,hexagon,triangle)
+        if not is_node_in_obstacle_space:
+            break
+        print("The start node lie in the obstacle space. Enter the values again")
+    else:
+        print("The start node is not within the canvas range or start orientation angle is not multiple of 30 degrees.Enter the values again")
+
+while True:
+    goal_x=int(input("Enter x coordinate of the goal node: "))
+    goal_y=int(input("Enter y coordinate of the goal node: "))
+    goal_theta=int(input("Enter the orientation of the robot in degrees at the goal node(It should be multiple of 30): "))
+    if (0<=goal_x<600 and 0<=goal_y<250 and goal_theta%30 != 0):
+        # Check whether the inputs are not in collision space
+        is_node_in_obstacle_space=IsNodeInObstacleSpace((goal_x,249-goal_y),wall_clearance,rectangle_1,rectangle_2,hexagon,triangle)
+        if not is_node_in_obstacle_space:
+            break
+        print("The goal node lie in the obstacle space. Enter the values again")
+    else:
+        print("The goal node is not within the canvas range or goal orientation angle is not multiple of 30 degrees.Enter the values again")
 
 
-start=(11,11,0)
-goal=(200,50,30)
-L=10
+while True:
+    step_size=int(input("Enter the step size of the robot between 1 and 10(both inclusive): "))
+    if 0<=step_size<=10:
+         break
+    else:
+        print("The step size is not within the range.Enter the value again.")
 
+print("A* in progress...")
+
+# Convert start and goal node to correct coordinate system
+start_node_xytheta=(start_x,249-start_y,start_theta)
+goal_node_xytheta=(goal_x,249-goal_y,goal_theta)
 
 start_time = time.time()
-result=A_Star_Algorithm(start,goal,wall_clearance,rectangle_1,rectangle_2,hexagon,triangle)
+result=A_Star_Algorithm(start_node_xytheta,goal_node_xytheta,step_size,wall_clearance,rectangle_1,rectangle_2,hexagon,triangle)
 
 end_time = time.time()
 print("Total time taken in seconds: ",end_time - start_time)
@@ -340,15 +379,15 @@ if result[0]:
         pygame.display.flip()
 
     pygame.draw.circle(canvas, (255,255,0), (path[len(path)-1][0],path[len(path)-1][1]),1)
-    x2=path[len(path)-1][0]+L*np.cos(np.deg2rad(path[len(path)-1][2]))
-    y2=path[len(path)-1][1]+L*np.sin(np.deg2rad(path[len(path)-1][2]))
+    x2=path[len(path)-1][0]+step_size*np.cos(np.deg2rad(path[len(path)-1][2]))
+    y2=path[len(path)-1][1]+step_size*np.sin(np.deg2rad(path[len(path)-1][2]))
     pygame.draw.line(canvas, (255,0,0),
                 [path[len(path)-1][0], path[len(path)-1][1]],
                 [x2, y2], 2)
     pygame.display.flip()
 
-pygame.draw.circle(canvas, (255,0,0), (start[0],start[1]),5,3)
-pygame.draw.circle(canvas, (255,0,0), (goal[0],goal[1]),5,3)
+pygame.draw.circle(canvas, (255,0,0), (start_node_xytheta[0],start_node_xytheta[1]),5,3)
+pygame.draw.circle(canvas, (255,0,0), (goal_node_xytheta[0],goal_node_xytheta[1]),5,3)
 pygame.display.flip()
 
 
@@ -359,70 +398,5 @@ while running:
         # Check for QUIT event      
         if event.type == pygame.QUIT:
             running = False
-
-
-#================================================================================================================================
-
-# # Get correct inputs from user
-# while True:
-#     start_x=int(input("Enter x coordinate of the start node: "))
-#     start_y=int(input("Enter y coordinate of the start node: "))
-#     if (0<=start_x<600 and 0<=start_y<250):
-#         # Check whether the inputs are not in collision space
-#         if (canvas.get_at((start_x, start_y))[:3]==(0,0,0)):
-#             break
-#         print("The start node lie in the obstacle space. Enter the values again")
-#     else:
-#         print("The start node is not within the canvas range. Enter the values again")
-
-
-# while True:
-#     goal_x=int(input("Enter x coordinate of the goal node: "))
-#     goal_y=int(input("Enter y coordinate of the goal node: "))
-#     if (0<=goal_x<600 and 0<=goal_y<250):
-#         # Check whether the inputs are not in collision space
-#         if (canvas.get_at((goal_x, goal_y))[:3]==(0,0,0)):
-#             break
-#         print("The goal node lie in the obstacle space. Enter the values again")
-#     else:
-#         print("The goal node is not within the canvas range. Enter the values again")
-
-    
-# print("Dijkstras in progress...")
-
-# # Convert start and goal node to correct coordinate system
-# start_node_xy=(start_x,249-start_y)
-# goal_node_xy=(goal_x,249-goal_y)
-
-# start = time.time()
-
-# # Run algorithm
-# path,visited_nodes=DijkstrasAlgorithm(start_node_xy,goal_node_xy)
-
-# end = time.time()
-# print("Done. Total time taken in seconds: ",end - start)
-
-# # Display the animation if user says yes
-# Visualization = input('Would you like to start visualization? Type "y" if yes, type "n" if no: ').lower()
-# if Visualization.startswith('y'):
-#     # Show explored nodes
-#     for i in range (len(visited_nodes)):
-#         gfxdraw.pixel(canvas, visited_nodes[i][0], visited_nodes[i][1], (0,0,255))
-#         pygame.display.flip()
-
-#     # Show optimal path
-#     for i in range (len(path)):
-#         pygame.draw.circle(canvas, (255,255,0), path[i], 3)
-#         pygame.display.flip()
-
-
-# running = True
-  
-# while running:
-#     for event in pygame.event.get():
-#         # Check for QUIT event      
-#         if event.type == pygame.QUIT:
-#             running = False
-
 
 #================================================================================================================================
