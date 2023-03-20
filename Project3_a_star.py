@@ -37,16 +37,18 @@ def CreateObstacles(canvas,clerarance,robot_radius):
     # For Border clerance
     canvas.fill((255,255,255))
     pygame.draw.rect(canvas, (0,0,0), pygame.Rect(distance, distance, 600-2*distance, 250-2*distance))
-
+    wall_clearance=[(distance,distance),(600-distance,distance),(600-distance,250-distance),(distance,250-distance)]
 
     # For Rectangular Obstacles
     pygame.draw.rect(canvas, (255,255,255), pygame.Rect(100, 0, 50, 100).inflate(2*distance,2*distance))
     pygame.draw.rect(canvas, (80,208,255), pygame.Rect(100, 0, 50, 100))
     pygame.draw.rect(canvas, (255,0,0), pygame.Rect(100, 0, 50, 100),2)
+    rectangle_1=[(100-distance,0-distance),(150+distance,0-distance),(150+distance,100+distance),(100-distance,100+distance)]
 
     pygame.draw.rect(canvas, (255,255,255), pygame.Rect(100, 150, 50, 100).inflate(2*distance,2*distance))
     pygame.draw.rect(canvas, (80,208,255), pygame.Rect(100, 150, 50, 100))
     pygame.draw.rect(canvas, (255,0,0), pygame.Rect(100, 150, 50, 100),2)
+    rectangle_2=[(100-distance,150-distance),(150+distance,150-distance),(150+distance,250+distance),(100-distance,250+distance)]
 
     # For Hexagonal Obstacle
     centre_hex=(300,125)
@@ -84,13 +86,53 @@ def CreateObstacles(canvas,clerarance,robot_radius):
     pygame.draw.polygon(canvas, (255,255,255), ((intersection1[0],intersection1[1]),(intersection2[0],intersection2[1]),(intersection3[0],intersection3[1])))
     pygame.draw.polygon(canvas, (80,208,255), ((460,25),(460,225),(510,125)))
     pygame.draw.polygon(canvas, (255,0,0), ((460,25),(460,225),(510,125)),2)
-
+    triangle=[intersection1,intersection2,intersection3]
     pygame.display.flip()
+
+    return wall_clearance,rectangle_1,rectangle_2,hex_points_inflated,triangle
+    
 
 #================================================================================================================================
 # Functions used for A* Algorithm
 
-def IsAngleActionPossible(current_node,closed_queue,closed_Q_matrix,L,angle):
+# Using half planes
+def IsPointOnOneSideOfLineSet(point,pointset):
+    is_on_right_side=[]
+    for i in range(len(pointset)-1):
+        x1=pointset[i][0]
+        y1=pointset[i][1]
+        x2=pointset[i+1][0]
+        y2=pointset[i+1][1]
+        d=(point[0]-x1)*(y2-y1)-(point[1]-y1)*(x2-x1)
+        if d >= 0:
+            is_on_right_side.append(True)
+        else:
+            is_on_right_side.append(False)
+
+    d=(point[0]-pointset[-1][0])*(pointset[0][1]-pointset[i][1])-(point[1]-pointset[-1][1])*(pointset[0][0]-pointset[-1][0])
+    if d >= 0:
+        is_on_right_side.append(True)
+    else:
+        is_on_right_side.append(False)
+
+    isAllSame = all(ele == is_on_right_side[0] for ele in is_on_right_side)
+    return isAllSame
+
+def IsNodeInObstacleSpace(point,wall_clearance,rectangle_1,rectangle_2,hexagon,triangle):
+    is_in_obstacle_space=False
+    if not IsPointOnOneSideOfLineSet(point,wall_clearance):
+        is_in_obstacle_space= True
+    elif IsPointOnOneSideOfLineSet(point,rectangle_1):
+        is_in_obstacle_space= True
+    elif IsPointOnOneSideOfLineSet(point,rectangle_2):
+        is_in_obstacle_space= True
+    elif IsPointOnOneSideOfLineSet(point,hexagon):
+        is_in_obstacle_space= True
+    elif IsPointOnOneSideOfLineSet(point,triangle):
+        is_in_obstacle_space= True
+    return is_in_obstacle_space
+
+def IsAngleActionPossible(current_node,closed_queue,closed_Q_matrix,L,angle,wall_clearance,rectangle_1,rectangle_2,hexagon,triangle):
     new_angle=current_node[1][5][2] + angle
     if new_angle < 0:
         new_angle=360+new_angle
@@ -100,7 +142,7 @@ def IsAngleActionPossible(current_node,closed_queue,closed_Q_matrix,L,angle):
     x=new_node_xytheta[0]
     y=new_node_xytheta[1]
     if 0<=x<600 and 0<=y<250:
-        if canvas.get_at((int(new_node_xytheta[0]), int(new_node_xytheta[1])))[:3]==(0,0,0):
+        if not IsNodeInObstacleSpace((new_node_xytheta[0],new_node_xytheta[1]),wall_clearance,rectangle_1,rectangle_2,hexagon,triangle):
             new_node_xythetaD=DiscretizeNodeCoordinates(new_node_xytheta)
             if closed_Q_matrix[int(new_node_xythetaD[1]/0.5)][int(new_node_xythetaD[0]/0.5)][int(new_node_xythetaD[2]/30)]==0:
                 return [True,new_node_xythetaD,new_node_xytheta] 
@@ -159,7 +201,7 @@ def IsGoalReached(node_xytheta, goal_node_xytheta,goal_threshold):
     return goal_reached
 
 # A* Algorithm
-def A_Star_Algorithm(start_node_xytheta, goal_node_xytheta):
+def A_Star_Algorithm(start_node_xytheta, goal_node_xytheta, wall_clearance,rectangle_1,rectangle_2,hexagon,triangle):
     visited_nodes=[]
     open_Q = {}
     open_Q_matrix=np.zeros(shape=(500,1200,12))
@@ -186,11 +228,10 @@ def A_Star_Algorithm(start_node_xytheta, goal_node_xytheta):
             break
         open_Q=dict(sorted(open_Q.items(),key=lambda x:x[1][0],reverse = True))
         current_node=open_Q.popitem()
-        # open_Q_matrix[int(current_node[0][1]/0.5)][int(current_node[0][0]/0.5)][int(current_node[0][2]/30)]=0
         closed_Q[current_node[0]]=current_node[1]
         closed_Q_matrix[int(current_node[0][1]/0.5)][int(current_node[0][0]/0.5)][int(current_node[0][2]/30)]=1
         
-        Action_0=IsAngleActionPossible(current_node,closed_Q,closed_Q_matrix,L,0)
+        Action_0=IsAngleActionPossible(current_node,closed_Q,closed_Q_matrix,L,0,wall_clearance,rectangle_1,rectangle_2,hexagon,triangle)
         if(Action_0[0]):
             new_node_xythetaD=Action_0[1]
             new_node_xytheta=Action_0[2]
@@ -202,7 +243,7 @@ def A_Star_Algorithm(start_node_xytheta, goal_node_xytheta):
                 goal_parent_index=current_node[1][3]
                 break
 
-        Action_30=IsAngleActionPossible(current_node,closed_Q,closed_Q_matrix,L,30)
+        Action_30=IsAngleActionPossible(current_node,closed_Q,closed_Q_matrix,L,30,wall_clearance,rectangle_1,rectangle_2,hexagon,triangle)
         if(Action_30[0]):
             new_node_xythetaD=Action_30[1]
             new_node_xytheta=Action_30[2]
@@ -214,7 +255,7 @@ def A_Star_Algorithm(start_node_xytheta, goal_node_xytheta):
                 goal_parent_index=current_node[1][3]
                 break
 
-        Action_Neg30=IsAngleActionPossible(current_node,closed_Q,closed_Q_matrix,L,-30)
+        Action_Neg30=IsAngleActionPossible(current_node,closed_Q,closed_Q_matrix,L,-30,wall_clearance,rectangle_1,rectangle_2,hexagon,triangle)
         if(Action_Neg30[0]):
             new_node_xythetaD=Action_Neg30[1]
             new_node_xytheta=Action_Neg30[2]
@@ -226,7 +267,7 @@ def A_Star_Algorithm(start_node_xytheta, goal_node_xytheta):
                 goal_parent_index=current_node[1][3]
                 break
 
-        Action_60=IsAngleActionPossible(current_node,closed_Q,closed_Q_matrix,L,60)
+        Action_60=IsAngleActionPossible(current_node,closed_Q,closed_Q_matrix,L,60,wall_clearance,rectangle_1,rectangle_2,hexagon,triangle)
         if(Action_60[0]):
             new_node_xythetaD=Action_60[1]
             new_node_xytheta=Action_60[2]
@@ -238,7 +279,7 @@ def A_Star_Algorithm(start_node_xytheta, goal_node_xytheta):
                 goal_parent_index=current_node[1][3]
                 break
 
-        Action_Neg60=IsAngleActionPossible(current_node,closed_Q,closed_Q_matrix,L,-60)
+        Action_Neg60=IsAngleActionPossible(current_node,closed_Q,closed_Q_matrix,L,-60,wall_clearance,rectangle_1,rectangle_2,hexagon,triangle)
         if(Action_Neg60[0]):
             new_node_xythetaD=Action_Neg60[1]
             new_node_xytheta=Action_Neg60[2]
@@ -266,15 +307,16 @@ def A_Star_Algorithm(start_node_xytheta, goal_node_xytheta):
 pygame.init()
 canvas=pygame.display.set_mode((600,250))
 
-CreateObstacles(canvas,5,5)
+wall_clearance,rectangle_1,rectangle_2,hexagon,triangle=CreateObstacles(canvas,5,5)
+
 
 start=(11,11,0)
-goal=(500,50,30)
+goal=(200,50,30)
 L=10
 
 
 start_time = time.time()
-result=A_Star_Algorithm(start,goal)
+result=A_Star_Algorithm(start,goal,wall_clearance,rectangle_1,rectangle_2,hexagon,triangle)
 
 end_time = time.time()
 print("Total time taken in seconds: ",end_time - start_time)
@@ -296,6 +338,14 @@ if result[0]:
                 [path[i][0], path[i][1]],
                 [path[i+1][0], path[i+1][1]], 1)
         pygame.display.flip()
+
+    pygame.draw.circle(canvas, (255,255,0), (path[len(path)-1][0],path[len(path)-1][1]),1)
+    x2=path[len(path)-1][0]+L*np.cos(np.deg2rad(path[len(path)-1][2]))
+    y2=path[len(path)-1][1]+L*np.sin(np.deg2rad(path[len(path)-1][2]))
+    pygame.draw.line(canvas, (255,0,0),
+                [path[len(path)-1][0], path[len(path)-1][1]],
+                [x2, y2], 2)
+    pygame.display.flip()
 
 pygame.draw.circle(canvas, (255,0,0), (start[0],start[1]),5,3)
 pygame.draw.circle(canvas, (255,0,0), (goal[0],goal[1]),5,3)
