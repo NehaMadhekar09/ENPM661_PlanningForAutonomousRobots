@@ -4,55 +4,89 @@
 #================================================================================================================================
 import pygame
 import numpy as np
-import heapq as hq
 from collections import deque
-from pygame import gfxdraw
+from shapely.geometry import LineString
 import time
 
-pygame.init()
-canvas=pygame.display.set_mode((600,250))
- 
-# For Rectangular Obstacles
-pygame.draw.rect(canvas, (255,255,255), pygame.Rect(100, 0, 50, 100).inflate(10,10))
-pygame.draw.rect(canvas, (80,208,255), pygame.Rect(100, 0, 50, 100))
-pygame.draw.rect(canvas, (255,0,0), pygame.Rect(100, 0, 50, 100),2)
 
-pygame.draw.rect(canvas, (255,255,255), pygame.Rect(100, 150, 50, 100).inflate(10,10))
-pygame.draw.rect(canvas, (80,208,255), pygame.Rect(100, 150, 50, 100))
-pygame.draw.rect(canvas, (255,0,0), pygame.Rect(100, 150, 50, 100),2)
+def FindIntersectionOfTwoLines(line1,line2):
+    if(line1[1][0] - line1[0][0]==0):
+        m2 = (line2[1][1]- line2[0][1]) / (line2[1][0]- line2[0][0])
+        c2 = line2[0][1] - m2 * line2[0][0]
+        intersection_x=line1[0][0]
+        intersection_y=m2* intersection_x + c2
+    elif(line2[1][0] - line2[0][0]==0):
+        m1 = (line1[1][1]- line1[0][1]) / (line1[1][0]- line1[0][0])
+        c1 = line1[0][1] - m1 * line1[0][0]
+        intersection_x=line2[0][0]
+        intersection_y = m1 * intersection_x + c1
+    else:
+        m1 = (line1[1][1]- line1[0][1]) / (line1[1][0]- line1[0][0])
+        m2 = (line2[1][1]- line2[0][1]) / (line2[1][0]- line2[0][0])
+        c1 = line1[0][1] - m1 * line1[0][0]
+        c2 = line2[0][1] - m2 * line2[0][0]
+        intersection_x = (c2 - c1) / (m1 - m2)
+        intersection_y = m1 * intersection_x + c1
 
-# For Hexagonal Obstacle
-centre_hex=(300,125)
-side=75
-hex_points=[]
-hex_points_inflated=[]
-
-line_offset=5
-offset_for_vertex=line_offset/np.cos(np.deg2rad(30))
-inflated_side= side + offset_for_vertex
-
-for i in range(6):
-    x=centre_hex[0]+side*np.cos(np.deg2rad(60*i + 30))
-    y=centre_hex[1]+side*np.sin(np.deg2rad(60*i + 30))
-    hex_points.append((x,y))
-    x_i=centre_hex[0]+inflated_side*np.cos(np.deg2rad(60*i + 30))
-    y_i=centre_hex[1]+inflated_side*np.sin(np.deg2rad(60*i + 30))
-    hex_points_inflated.append((x_i,y_i))
-
-pygame.draw.polygon(canvas, (255,255,255), (hex_points_inflated[0],hex_points_inflated[1],hex_points_inflated[2],hex_points_inflated[3],hex_points_inflated[4],hex_points_inflated[5]))
-pygame.draw.polygon(canvas, (80,208,255), (hex_points[0],hex_points[1],hex_points[2],hex_points[3],hex_points[4],hex_points[5]))
-pygame.draw.polygon(canvas, (255,0,0), (hex_points[0],hex_points[1],hex_points[2],hex_points[3],hex_points[4],hex_points[5]),2)
+    return (intersection_x,intersection_y)
 
 
-# For Triangular Obstacle
-x_off=10/np.sqrt(3)
-y_off=10+(20/np.sqrt(3))
+def CreateObstacles(canvas,clerarance,robot_radius):
+    distance= clerarance+robot_radius
 
-pygame.draw.polygon(canvas, (255,255,255), ((460-5,25-y_off),(460-5,225+y_off),(510+x_off,125)))
-pygame.draw.polygon(canvas, (80,208,255), ((460,25),(460,225),(510,125)))
-pygame.draw.polygon(canvas, (255,0,0), ((460,25),(460,225),(510,125)),2)
+    # For Border clerance
+    canvas.fill((255,255,255))
+    pygame.draw.rect(canvas, (0,0,0), pygame.Rect(distance, distance, 600-2*distance, 250-2*distance))
 
-pygame.display.flip()
+
+    # For Rectangular Obstacles
+    pygame.draw.rect(canvas, (255,255,255), pygame.Rect(100, 0, 50, 100).inflate(2*distance,2*distance))
+    pygame.draw.rect(canvas, (80,208,255), pygame.Rect(100, 0, 50, 100))
+    pygame.draw.rect(canvas, (255,0,0), pygame.Rect(100, 0, 50, 100),2)
+
+    pygame.draw.rect(canvas, (255,255,255), pygame.Rect(100, 150, 50, 100).inflate(2*distance,2*distance))
+    pygame.draw.rect(canvas, (80,208,255), pygame.Rect(100, 150, 50, 100))
+    pygame.draw.rect(canvas, (255,0,0), pygame.Rect(100, 150, 50, 100),2)
+
+    # For Hexagonal Obstacle
+    centre_hex=(300,125)
+    side=75
+    hex_points=[]
+    hex_points_inflated=[]
+
+    offset_for_vertex=distance/np.cos(np.deg2rad(30))
+    inflated_side= side + offset_for_vertex
+
+    for i in range(6):
+        x=centre_hex[0]+side*np.cos(np.deg2rad(60*i + 30))
+        y=centre_hex[1]+side*np.sin(np.deg2rad(60*i + 30))
+        hex_points.append((x,y))
+        x_i=centre_hex[0]+inflated_side*np.cos(np.deg2rad(60*i + 30))
+        y_i=centre_hex[1]+inflated_side*np.sin(np.deg2rad(60*i + 30))
+        hex_points_inflated.append((x_i,y_i))
+
+    pygame.draw.polygon(canvas, (255,255,255), (hex_points_inflated[0],hex_points_inflated[1],hex_points_inflated[2],hex_points_inflated[3],hex_points_inflated[4],hex_points_inflated[5]))
+    pygame.draw.polygon(canvas, (80,208,255), (hex_points[0],hex_points[1],hex_points[2],hex_points[3],hex_points[4],hex_points[5]))
+    pygame.draw.polygon(canvas, (255,0,0), (hex_points[0],hex_points[1],hex_points[2],hex_points[3],hex_points[4],hex_points[5]),2)
+
+    line1 = LineString([(460, 25), (460, 225)])
+    line2 = LineString([(460, 225), (510, 125)])
+    line3 = LineString([(510, 125), (460, 25)])
+
+    line1_offset = line1.parallel_offset(-distance)
+    line2_offset = line2.parallel_offset(-distance)
+    line3_offset = line3.parallel_offset(-distance)
+
+    intersection1=FindIntersectionOfTwoLines(list(line1_offset.coords),list(line2_offset.coords))
+    intersection2=FindIntersectionOfTwoLines(list(line2_offset.coords),list(line3_offset.coords))
+    intersection3=FindIntersectionOfTwoLines(list(line3_offset.coords),list(line1_offset.coords))
+
+    pygame.draw.polygon(canvas, (255,255,255), ((intersection1[0],intersection1[1]),(intersection2[0],intersection2[1]),(intersection3[0],intersection3[1])))
+    pygame.draw.polygon(canvas, (80,208,255), ((460,25),(460,225),(510,125)))
+    pygame.draw.polygon(canvas, (255,0,0), ((460,25),(460,225),(510,125)),2)
+
+    pygame.display.flip()
+
 #================================================================================================================================
 # Functions used for A* Algorithm
 
@@ -143,8 +177,13 @@ def A_Star_Algorithm(start_node_xytheta, goal_node_xytheta):
     L=10
     goal_threshold=1.5
     index=1
-    # Run for maximum 1 million iterations
-    while index < 1000000:
+    # Run for maximum 10000 iterations
+    isConverged=True
+    while True:
+        if index > 10000:
+            print("Failed to reach the goal.Kindly check whether the goal is in reachable area. Max Iterations Reached.")
+            isConverged=False
+            break
         open_Q=dict(sorted(open_Q.items(),key=lambda x:x[1][0],reverse = True))
         current_node=open_Q.popitem()
         # open_Q_matrix[int(current_node[0][1]/0.5)][int(current_node[0][0]/0.5)][int(current_node[0][2]/30)]=0
@@ -156,7 +195,6 @@ def A_Star_Algorithm(start_node_xytheta, goal_node_xytheta):
             new_node_xythetaD=Action_0[1]
             new_node_xytheta=Action_0[2]
             new_node=UpdateOpenList(current_node,new_node_xythetaD,new_node_xytheta,1,open_Q,open_Q_matrix,index,goal_node_xytheta)
-            print(new_node_xythetaD)
             open_Q_matrix[int(new_node_xythetaD[1]/0.5)][int(new_node_xythetaD[0]/0.5)][int(new_node_xythetaD[2]/30)]=1
             visited_nodes.append((current_node[1][3],new_node_xytheta))
             index+=1
@@ -169,7 +207,6 @@ def A_Star_Algorithm(start_node_xytheta, goal_node_xytheta):
             new_node_xythetaD=Action_30[1]
             new_node_xytheta=Action_30[2]
             new_node=UpdateOpenList(current_node,new_node_xythetaD,new_node_xytheta,1,open_Q,open_Q_matrix,index,goal_node_xytheta)
-            print(new_node_xythetaD)
             open_Q_matrix[int(new_node_xythetaD[1]/0.5)][int(new_node_xythetaD[0]/0.5)][int(new_node_xythetaD[2]/30)]=1
             visited_nodes.append((current_node[1][3],new_node_xytheta))
             index+=1
@@ -182,7 +219,6 @@ def A_Star_Algorithm(start_node_xytheta, goal_node_xytheta):
             new_node_xythetaD=Action_Neg30[1]
             new_node_xytheta=Action_Neg30[2]
             new_node=UpdateOpenList(current_node,new_node_xythetaD,new_node_xytheta,1,open_Q,open_Q_matrix,index,goal_node_xytheta)
-            print(new_node_xythetaD)
             open_Q_matrix[int(new_node_xythetaD[1]/0.5)][int(new_node_xythetaD[0]/0.5)][int(new_node_xythetaD[2]/30)]=1
             visited_nodes.append((current_node[1][3],new_node_xytheta))
             index+=1
@@ -195,7 +231,6 @@ def A_Star_Algorithm(start_node_xytheta, goal_node_xytheta):
             new_node_xythetaD=Action_60[1]
             new_node_xytheta=Action_60[2]
             new_node=UpdateOpenList(current_node,new_node_xythetaD,new_node_xytheta,1,open_Q,open_Q_matrix,index,goal_node_xytheta)
-            print(new_node_xythetaD)
             open_Q_matrix[int(new_node_xythetaD[1]/0.5)][int(new_node_xythetaD[0]/0.5)][int(new_node_xythetaD[2]/30)]=1
             visited_nodes.append((current_node[1][3],new_node_xytheta))
             index+=1
@@ -208,7 +243,6 @@ def A_Star_Algorithm(start_node_xytheta, goal_node_xytheta):
             new_node_xythetaD=Action_Neg60[1]
             new_node_xytheta=Action_Neg60[2]
             new_node=UpdateOpenList(current_node,new_node_xythetaD,new_node_xytheta,1,open_Q,open_Q_matrix,index,goal_node_xytheta)
-            print(new_node_xythetaD)
             open_Q_matrix[int(new_node_xythetaD[1]/0.5)][int(new_node_xythetaD[0]/0.5)][int(new_node_xythetaD[2]/30)]=1
             visited_nodes.append((current_node[1][3],new_node_xytheta))
             index+=1
@@ -218,43 +252,56 @@ def A_Star_Algorithm(start_node_xytheta, goal_node_xytheta):
             
         if(len(open_Q)==0):
             print("Failed to find solution")
-            return
+            isConverged=False
+            break
 
-    # Backtrach path
-    path=BacktrackPath(closed_Q,goal_node_xytheta,goal_parent_index)
+    if(isConverged):
+        # Backtrach path
+        path=BacktrackPath(closed_Q,goal_node_xytheta,goal_parent_index)
+        return [isConverged,path, visited_nodes]
 
-    return path, open_Q_matrix, closed_Q_matrix,open_Q,closed_Q,visited_nodes
+    return [isConverged]
 
-start=(0,0,0)
+
+pygame.init()
+canvas=pygame.display.set_mode((600,250))
+
+CreateObstacles(canvas,5,5)
+
+start=(11,11,0)
 goal=(500,50,30)
+L=10
 
-path,open_nodes_mat,closed_nodes_mat,open_q,closed_q,visited_nodes=A_Star_Algorithm(start,goal)
 
-print(path)
+start_time = time.time()
+result=A_Star_Algorithm(start,goal)
 
-print("Done")
+end_time = time.time()
+print("Total time taken in seconds: ",end_time - start_time)
 
-print(open_nodes_mat[0][0][1])
-print(closed_nodes_mat[0][0][1])
-
-for i in range(1,len(visited_nodes)):
-    parent_index=visited_nodes[i][0]
-    pygame.draw.line(canvas, (0, 0, 255),
+if result[0]:
+    path=result[1]
+    visited_nodes=result[2]
+    for i in range(1,len(visited_nodes)):
+        parent_index=visited_nodes[i][0]
+        pygame.draw.line(canvas, (0, 0, 255),
                 [visited_nodes[parent_index][1][0], visited_nodes[parent_index][1][1]],
                 [visited_nodes[i][1][0], visited_nodes[i][1][1]], 1)
-    pygame.display.flip()
-
-
-# Show optimal path
-for i in range (len(path)-1):
-    pygame.draw.circle(canvas, (255,255,0), (path[i][0],path[i][1]),1)
-    pygame.draw.line(canvas, (255,255,0),
+        pygame.display.flip()
+    
+    # Show optimal path
+    for i in range (len(path)-1):
+        pygame.draw.circle(canvas, (255,255,0), (path[i][0],path[i][1]),1)
+        pygame.draw.line(canvas, (255,255,0),
                 [path[i][0], path[i][1]],
                 [path[i+1][0], path[i+1][1]], 1)
-    pygame.display.flip()
+        pygame.display.flip()
+
+pygame.draw.circle(canvas, (255,0,0), (start[0],start[1]),5,3)
+pygame.draw.circle(canvas, (255,0,0), (goal[0],goal[1]),5,3)
+pygame.display.flip()
 
 
-        
 running = True
   
 while running:
